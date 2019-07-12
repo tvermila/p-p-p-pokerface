@@ -1,22 +1,5 @@
 (ns p-p-p-pokerface)
 
-;;;;;;;;;;;;;;;;;;; HANDS FOR TESTING ;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(def high-seven                   ["2H" "3S" "4C" "5C" "7D"])
-(def pair-hand                    ["2H" "2S" "4C" "5C" "7D"])
-(def two-pairs-hand               ["2H" "2S" "4C" "4D" "7D"])
-(def three-of-a-kind-hand         ["2H" "2S" "2C" "4D" "7D"])
-(def four-of-a-kind-hand          ["2H" "2S" "2C" "2D" "7D"])
-(def straight-hand                ["2H" "3S" "6C" "5D" "4D"])
-(def low-ace-straight-hand        ["2H" "3S" "4C" "5D" "AD"])
-(def high-ace-straight-hand       ["TH" "AS" "QC" "KD" "JD"])
-(def flush-hand                   ["2H" "4H" "5H" "9H" "7H"])
-(def full-house-hand              ["2H" "5D" "2D" "2C" "5S"])
-(def straight-flush-hand          ["2H" "3H" "6H" "5H" "4H"])
-(def low-ace-straight-flush-hand  ["2D" "3D" "4D" "5D" "AD"])
-(def high-ace-straight-flush-hand ["TS" "AS" "QS" "KS" "JS"])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn rank [card]
   (let [[rank suit] card] 
@@ -37,10 +20,11 @@
 
 (defn amount-of-a-kind [amount hand]
   (let [values (amount-of-values hand)]
-    (if (= (apply max values) amount)
-      true
-      false)))
+    (= (apply max values) amount)))
 
+(defn high-card? [hand]
+  (let [values (map rank hand)]
+    (apply max values)))
 
 (defn pair? [hand]
   (amount-of-a-kind 2 hand))
@@ -55,45 +39,53 @@
 
 
 (defn flush? [hand]
-  (let [values (amount-of-suits hand)]
-    (if (= (apply max values) 5)
-      true
-      false)))
+  (let [cards (amount-of-suits hand)]
+    (= (apply max cards) 5)))
 
 
 (defn full-house? [hand]
   (let [values (amount-of-values hand)]
-    (if (and (= (apply max values) 3) (= (apply min values) 2))
-      true
-      false)))
+    (and (= (apply max values) 3) (= (apply min values) 2))))
 
 (defn two-pairs? [hand]
-  (amount-of-a-kind 2 hand))
+  (let [values (amount-of-values hand)]
+    (or (= (first values) (second values) 2)
+        (= (first values) 4))))
 
-;;;;;;;;;;;;;
+(defn contains-ace? [hand]
+  (let [values (map rank hand)] 
+    (= (apply max values) 14)))
 
-(two-pairs? two-pairs-hand)      ;=> true
-(two-pairs? pair-hand)           ;=> false
-(two-pairs? four-of-a-kind-hand) ;=> true
-
-;;;;;;;;;;;;;;
 
 (defn straight? [hand]
-  (let [values (str (map rank hand))]
-    (values)))
+  (let [sorted-values (sort (map rank hand))
+        min-val (first sorted-values)
+        max-val (last sorted-values)
+        min-val-ace 1
+        max-val-ace (nth sorted-values 3)]
+    (cond
+      (contains-ace? hand)
+      (or (= (- max-val-ace min-val-ace) 4) (= (- max-val min-val) 4))
+      :else (= (- max-val min-val) 4))))
 
-;;;;;;;;;;
+(def straight-hand ["2H" "3S" "6C" "5D" "4D"])
+(straight? ["2H" "3H" "3D" "4H" "6H"])
 
-(straight? two-pairs-hand)             ;=> false
-(straight? straight-hand)              ;=> true
-(straight? low-ace-straight-hand)      ;=> true
-(straight? ["2H" "2D" "3H" "4H" "5H"]) ;=> false
-(straight? high-ace-straight-hand)     ;=> true
-
-;;;;;;;;;;
+(straight? straight-hand)
 
 (defn straight-flush? [hand]
-  nil)
+  (and (straight? hand) (flush? hand)))
 
 (defn value [hand]
-  nil)
+  (cond
+    (straight-flush? hand) 8
+    (four-of-a-kind? hand) 7
+    (full-house? hand) 6
+    (flush? hand) 5
+    (straight? hand) 4
+    (three-of-a-kind? hand) 3
+    (two-pairs? hand) 2
+    (pair? hand) 1
+    :else 0))
+
+
