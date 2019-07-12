@@ -60,18 +60,20 @@
 (defn straight? [hand]
   (let [sorted-values (sort (map rank hand))
         min-val (first sorted-values)
-        max-val (last sorted-values)
-        min-val-ace 1
-        max-val-ace (nth sorted-values 3)]
+        [first second third fourth fifth] sorted-values]
     (cond
       (contains-ace? hand)
-      (or (= (- max-val-ace min-val-ace) 4) (= (- max-val min-val) 4))
-      :else (= (- max-val min-val) 4))))
+      (or (and (= first 2) (= second 3)
+               (= third 4) (= fourth 5)
+               (= fifth 14))
+          (and (= first 10) (= second 11)
+           (= third 12) (= fourth 13)
+           (= fifth 14)))
+      :else (and (= second (+ min-val 1))
+                 (= third (+ min-val 2))
+                 (= fourth (+ min-val 3))
+                 (= fifth (+ min-val 4))))))
 
-(def straight-hand ["2H" "3S" "6C" "5D" "4D"])
-(straight? ["2H" "3H" "3D" "4H" "6H"])
-
-(straight? straight-hand)
 
 (defn straight-flush? [hand]
   (and (straight? hand) (flush? hand)))
